@@ -1,0 +1,53 @@
+MODULE TsdSyncBuffer;
+
+REQUIRE TsdInputFormList;
+
+NAMESPACE Tsd;
+
+ tsdCheckSyncBuffer 'Отправка данных на главный сервер (tsdCheckSyncBuffer)' () {
+     IF NOT tsdMainBase() THEN {
+         LOCAL retValue = STRING ();
+         LOCAL sendValue = XMLFILE ();
+         FOR TsdInputBuffer b AS TsdInputBuffer IF timeSendCheck(b) DO timeSendCheck(b) <- NULL;
+         FOR TsdInputBuffer b AS TsdInputBuffer IF timeCompleted(b) AND NOT timeSend(b) DO timeSendCheck(b) <- TRUE;
+         EXPORT tsdInputBufferFormControlExport JSON TO sendValue;
+         headers('Authorization') <- baseMainBaseMd5();
+         EXTERNAL HTTP urlMainBase() + '/exec?action=Tsd.tsdSyncBuffer' HEADERS headers PARAMS sendValue() TO retValue;
+         IF retValue() == '"Ok"' THEN {
+            FOR TsdInputBuffer b AS TsdInputBuffer IF  timeCompleted(b) AND timeSendCheck(b) AND NOT timeSend(b) DO  timeSend(b) <- currentDateTime(); 
+            APPLY;
+         }
+         ELSE CANCEL;
+     }
+ }
+ 
+ tsdSyncBuffer 'Прием данных ТСД' (XMLFILE f){
+      TRY {
+           IMPORT tsdInputBufferFormControlImport JSON FROM f;
+           LOCAL cur =  TsdInputBuffer();
+           FOR imported(INTEGER i) DO {
+               cur () <-  GROUP MAX TsdInputBuffer b IF  ret_timeScanText(i) == timeScanText(b) AND tsdHostName(b) == ret_tsdHostName(i);
+               
+               IF NOT cur() THEN NEW n = TsdInputBuffer {
+                   cur() <- n;
+               }
+                 tsdHostName(cur()) <- ret_tsdHostName(i);
+                 docType(cur()) <- getTsdDocType(ret_docType(i));
+                 timeScan(cur()) <- ret_timeScan(i);
+                 timeScanText(cur()) <- ret_timeScanText(i);
+                 scanCode(cur()) <- ret_scanCode(i);
+                 barCode(cur()) <- getTsdBarCode(ret_barCode(i));
+                 cellFrom(cur()) <- getTsdCells(ret_cellFrom(i));
+                 cellTo(cur()) <- getTsdCells(ret_cellTo(i));
+                 timeCompleted(cur()) <- ret_timeCompleted(i);
+                 timeSend(cur()) <- currentDateTime();
+                 dateProduct(cur()) <- toDateFormat( substr(ret_scanCode(i), 8, 6), 'YYMMDD' ) IF length(ret_scanCode(i)) = 16;
+         }
+         TRY {
+             APPLY;
+             EXPORT FROM 'Ok';
+         } 
+          CATCH  {EXPORT FROM 'Error 2 APPLY';};
+      }  CATCH EXPORT FROM 'Error 1 JSON';
+ }
+ 

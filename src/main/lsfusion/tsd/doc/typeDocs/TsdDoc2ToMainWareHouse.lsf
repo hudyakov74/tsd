@@ -1,0 +1,30 @@
+MODULE TsdDoc2ToMainWareHouse;
+ 
+REQUIRE  TsdDoc,Utils,TsdInputForm;
+
+NAMESPACE Tsd;
+
+EXTEND CLASS TsdDocType {
+    TsdDocIssue2 'Цех фасовки в Склад'
+}
+ 
+execTsdDocType2(TsdDocType docType) {
+    SHOW tsdInputBufferForm OBJECTS docType = docType, showWh = TFALSE DOCKED ;
+}
+
+EXTEND FORM tsdListDoc
+PROPERTIES 
+    buttonTsdDocIssue2 'Цех фасовки в Склад' = { execTsdDocType2( TsdDocType.TsdDocIssue2 ); } 
+;
+
+DESIGN tsdListDoc {
+    GROUP (){
+        MOVE PROPERTY (buttonTsdDocIssue2){ 
+            fill = 1; 
+            height = 100;
+            fontStyle = 'bold';
+            fontSize = 24;
+        }
+    }
+}
+ 

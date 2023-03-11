@@ -1,0 +1,9 @@
+MODULE TsdRef;
+
+REQUIRE TsdBarCode, TsdWareHouse, TsdUsers, TsdUom, TsdCells, TsdNomenkl;
+
+currentCaption(TBOOLEAN showWh) =
+    IF showWh == TTRUE THEN 
+    CONCAT ': ', name(currentUser()), (CONCAT ' -> ',name(curruntCellFrom()),name(curruntCellTo()))
+    ELSE name(currentUser())
+;

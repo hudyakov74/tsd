@@ -1,0 +1,173 @@
+MODULE TsdInputForm;
+ 
+REQUIRE TsdInputBuffer,TsdRef; 
+
+NAMESPACE Tsd;
+
+
+FORM tsdInputBufferFormControl 'Данные скана'
+    OBJECTS b = TsdInputBuffer
+    PROPERTIES (b) timeScan,timeScanText,timeCompleted,timeSend,timeSendCheck,timeSend1c,timeSendCheck1c,
+    tsdHostName
+    ,scanCode, NEW , DELETE
+PROPERTIES
+        docType = staticCaption(docType(b)),
+        nom 'Номенклатура' =  name(nomenkl(barCode(b))),
+        uom 'ед.изм'       =  name(uom(barCode(b))),
+        uomKoeff 'кол'       =   (uomKoeff(barCode(b))),
+        uomMain 'ед.'       =  name(uomMain(barCode(b)))
+;
+NAVIGATOR {
+    tsd
+      {
+          NEW tsdInputBufferFormControl;
+      }
+}
+formSendData 'Завершить партию' (TsdDocType docType) ABSTRACT;
+
+clicBarcodeInput(STRING inp1,TsdDocType dt,TsdCells  cellFrom, TsdCells cellTo) {
+    IF NOT (GROUP MAX TsdInputBuffer c AS TsdInputBuffer IF length(inp1) == 16 AND inp1 == scanCode(c) AND docType(c) == dt) THEN {
+                tsdMessage() <- NULL;
+                LOCAL bc = TsdBarCode();
+                LOCAL dateProd = DATE();
+                LOCAL fInp1 = STRING ();
+        //!! todo 
+                IF length(inp1) == 16 THEN {
+                    dateProd() <- toDateFormat( substr(inp1,8,6) ,'YYMMDD' );
+                    fInp1() <- substr(inp1,1,7);
+                }  
+                ELSE fInp1() <- inp1;
+                bc() <- GROUP MAX TsdBarCode bc AS TsdBarCode IF code(bc) == fInp1();
+                IF bc() THEN NEW n = TsdInputBuffer {
+                    tsdHostName(n) <- tsdHostName();
+                    docType(n) <- dt;
+                    timeScan(n) <- currentDateTime();
+                    timeScanText(n) <- currentTimeText();
+                    scanCode(n) <- inp1;
+                    barCode(n) <- bc();
+                    dateProduct(n) <- dateProd();
+                    cellFrom(n) <- cellFrom;
+                    cellTo(n) <- cellTo;
+                     
+                    APPLY NESTED LOCAL;
+                    }
+        }
+    
+    ELSE {   
+         tsdMessage() <- CONCAT ' ', 'Повтор!.Штрих код уже учтен',inp1;
+         NEWTHREAD {
+      // pkg install pulseaudio
+        cmd('paplay /data/data/com.termux/files/home/error.ogg');
+        }
+    }
+}
+
+
+
+FORM tsdInputBufferForm 'Скан'
+    OBJECTS     showWh = TBOOLEAN  PANEL 
+    OBJECTS     docType = TsdDocType PANEL
+    OBJECTS     cellFrom = TsdCells  PANEL
+    OBJECTS     cellTo   = TsdCells  PANEL
+    
+    PROPERTIES  name '' = CONCAT ', ',name(docType), ( IF showWh THEN CONCAT ' => ',name(cellFrom),name(cellTo) ) READONLY
+    PROPERTIES  showWh '' = VALUE (showWh)
+    PROPERTIES formSendData = formSendData(docType)
+    OBJECTS s = STRING[50] PANEL
+    PROPERTIES  inp '' = VALUE (s) ON CHANGE {
+        INPUT inp1 = STRING DO {
+            SEEK FIRST tsdInputBufferForm.s = '';
+            clicBarcodeInput(inp1, docType,cellFrom,cellTo);
+        }
+    },
+    message '' = tsdMessage() FOREGROUND #FF0000 SHOWIF tsdMessage() 
+    
+    OBJECTS b = TsdInputBuffer
+    PROPERTIES (b) READONLY  scanCode 
+    PROPERTIES READONLY 
+        nom 'Номенклатура' =  name(nomenkl(barCode(b))),
+        uom 'ед.изм'       =  name(uom(barCode(b))),
+        uomKoeff 'кол'       =   (uomKoeff(barCode(b))),
+        uomMain 'ед.'       =  name(uomMain(barCode(b))),
+        timeScan 'время скана' = (CONCAT ':', extractHour(timeScan(b)), extractMinute(timeScan(b))),
+        timeScan1 '' = timeScanText(b)
+ 
+    
+    ORDERS timeScan1 DESC 
+    FILTERS docType == docType(b) AND NOT timeCompleted(b)
+    AND  cellTo == cellTo(b) AND  cellFrom == cellFrom(b)
+    
+    EVENTS ON INIT { tsdMessage() <- NULL; ACTIVATE PROPERTY tsdInputBufferForm.inp; }
+;
+
+DESIGN tsdInputBufferForm {
+    PROPERTY (scanCode(b)) {charWidth = 15;}
+    PROPERTY (nom) {charWidth = 20;}
+    PROPERTY (uom) {charWidth = 3;}
+    PROPERTY (uomKoeff) {charWidth = 5;}
+    PROPERTY (uomMain) {charWidth = 3;}
+    PROPERTY (timeScan) {charWidth = 4;}
+    PROPERTY (timeScan1) {charWidth = 1;}
+    PROPERTY (formClose()){height = 50; caption = 'Закрыть'; }
+    PROPERTY (formSendData){height = 50; }
+
+    
+    PANEL {
+        MOVE PROPERTY (showWh) {hide = TRUE;}
+        NEW caption {
+            caption = currentCaption(showWh); 
+            
+            fill = 1;
+            horizontal = FALSE;
+            lines = 1;
+            //caption = ;
+            MOVE PROPERTY (name){
+                fill = 1; 
+                fontSize = 16;
+            };
+            MOVE PROPERTY (inp){
+                fill = 1; 
+                fontSize = 26;
+                fontStyle = 'bold';
+            };
+            MOVE PROPERTY (message){
+                fill = 1; 
+                fontSize = 26;
+                fontStyle = 'bold';
+            };
+            
+    }
+    
+        
+    }
+    TOOLBARLEFT (b){
+     showIf = 0 != 0;
+    }
+    TOOLBARBOX (b){
+        MOVE PROPERTY (formClose())  FIRST;
+    }
+    TOOLBARRIGHT (b){
+        MOVE PROPERTY (formSendData);
+    }
+
+    TOOLBARBOX {showIf = 0 != 0;};
+    TOOLBARSYSTEM (b){
+        showCalculateSum = FALSE ;
+        showCountQuantity= FALSE ;
+        showGroup= FALSE ;
+        showPrintGroupXls = FALSE ;
+        showSettings = FALSE ;
+    }
+}
+ 
+
+formSendData(TsdDocType docType) + {
+    LOCAL d = DATETIME ();
+    d() <- currentDateTime();
+    FOR TsdInputBuffer bc AS TsdInputBuffer IF NOT timeCompleted(bc) AND docType(bc) == docType  DO {
+        timeCompleted(bc) <- d();
+    }
+    APPLY NESTED LOCAL;
+    ACTIVATE PROPERTY tsdInputBufferForm.inp;
+}
+ 

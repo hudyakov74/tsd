@@ -1,0 +1,190 @@
+MODULE TsdImport1c;
+
+REQUIRE Utils, TsdNomenkl, TsdUom, TsdBarCode, TsdWareHouse, TsdCells;
+
+NAMESPACE Tsd;
+ 
+tsdImpMetadata = DATA LOCAL STRING();
+tsdImpBarCode = DATA LOCAL STRING(INTEGER);
+//tsdImpUomNameMain = DATA LOCAL STRING(INTEGER);
+tsdImpCodeNomenkl = DATA LOCAL STRING(INTEGER);
+tsdImpUidNomenkl = DATA LOCAL STRING(INTEGER);
+tsdImpUidUom = DATA LOCAL STRING(INTEGER);
+//tsdImpNameNomenkl1c = DATA LOCAL STRING(INTEGER);
+//vupakovka_navigationLinkUrl = DATA LOCAL STRING(INTEGER);
+tsdImpUomNum = DATA LOCAL NUMERIC(INTEGER);
+tsdImpUomDen = DATA LOCAL NUMERIC(INTEGER);
+//vnomienklatura_navigationLinkUrl = DATA LOCAL STRING(INTEGER);
+
+GROUP tsdImpGroup1 EXTID 'Номенклатура';
+GROUP tsdImpGroup2 EXTID 'Упаковка';
+
+FORM barCodeImport1c
+PROPERTIES() tsdImpMetadata EXTID 'odata.metadata'
+OBJECTS value = INTEGER EXTID 'value'
+PROPERTIES(value) 
+    tsdImpUidNomenkl EXTID  'Номенклатура_Key',
+    tsdImpUidUom     EXTID  'Упаковка_Key',
+    tsdImpBarCode    EXTID  'Штрихкод',
+    tsdImpNameUom    EXTID 'Упаковка____Presentation', 
+    tsdImpNameNomenkl EXTID 'Номенклатура____Presentation' 
+        //vupakovka_navigationLinkUrl EXTID 'Упаковка@navigationLinkUrl', vnomienklatura_navigationLinkUrl EXTID 'Номенклатура@navigationLinkUrl'
+PROPERTIES(value) IN tsdImpGroup1 
+    tsdImpNameUomMain EXTID 'ЕдиницаИзмерения____Presentation', 
+    tsdImpCodeNomenkl EXTID 'Code'
+FILTERS imported(value)
+PROPERTIES(value) IN tsdImpGroup2 
+    tsdImpUomNum EXTID 'Числитель', 
+    tsdImpUomDen EXTID 'Знаменатель';
+ 
+
+
+loadCatalogBarCodeFrom1cQuery(STRING filter){
+     headers('Authorization') <- base1cMd5();
+     timeoutHttp() <- 15000; //15 секунд
+     TRY
+     EXTERNAL HTTP GET urlMain1cBase() + 
+    '/InformationRegister_ШтрихкодыНоменклатуры/?$format=json&$expand=Номенклатура,Упаковка&$select=Номенклатура_Key,Упаковка_Key,Штрихкод,Номенклатура/Code,Номенклатура____Presentation,Упаковка____Presentation,Номенклатура/ЕдиницаИзмерения____Presentation,Упаковка/Числитель,Упаковка/Знаменатель' 
+         + filter
+     HEADERS headers TO resultFile;
+     CATCH resultString() <-  CONCAT ': ','Запрос не был выполнен статус', statusHttp(); 
+}
+ 
+loadCatalogBarCodeFrom1c 'загрузить из 1c штрих коды' () {
+     LOCAL imported1c = BOOLEAN (INTEGER);
+     LOCAL ii = INTEGER ();
+     loadCatalogBarCodeFrom1cQuery('');
+     
+    IF failedHttp()  THEN
+        {
+            MESSAGE resultString();
+        }
+    ELSE{
+        IMPORT barCodeImport1c JSON FROM resultFile();
+        imported1c(INTEGER i) <- NULL WHERE imported1c(i);
+        imported1c(INTEGER i) <- System.imported(i) IF System.imported(i);
+      //  SHOW barCodeImport1c;
+        // refresh uom
+        clearImportTsdUom();
+        ii() <- 0;
+        FOR [GROUP MAX  INTEGER t BY tsdImpNameUomMain(t)](STRING res)  AND res != '' DO {
+            ii() <- ii() (+) 1;
+            tsdImpCode(ii()) <- res;
+            tsdImpName(ii()) <- res;
+            imported(ii()) <- TRUE;
+        }
+        syncTsdUomImp(TFALSE);
+        
+        clearImportTsdUom();
+        ii() <- 0;
+        FOR [GROUP MAX  INTEGER t BY tsdImpNameUom(t)](STRING res)   AND res != '' DO {
+            ii() <- ii() (+) 1;
+            tsdImpCode(ii()) <- res;
+            tsdImpName(ii()) <- res;
+            imported(ii()) <- TRUE;
+        }
+        syncTsdUomImp(TFALSE);
+        
+        // refresh Nomenkl
+        clearImportTsdNomenkl();
+        ii() <- 0; 
+           FOR [GROUP MAX INTEGER t BY tsdImpCodeNomenkl(t),tsdImpNameNomenkl(t)](STRING resC, STRING resN)  AND resN != '' DO {
+            ii() <- ii() (+) 1;
+            tsdImpCode(ii()) <- resC;
+            tsdImpName(ii()) <- resN;
+            imported(ii()) <- TRUE;
+        }
+        syncTsdNomenklImp(TFALSE );
+        
+        // refresh BarCode
+        clearImportTsdBarCode();
+        FOR imported1c(INTEGER i) DO {
+            tsdImpCode(i)     <- tsdImpBarCode(i);
+            tsdImpName(i)     <- tsdImpBarCode(i);
+            tsdImpUomKoeff(i) <- IF tsdImpUomDen(i) !=0 AND tsdImpUomNum(i) != 0 THEN tsdImpUomNum(i)/tsdImpUomDen(i) ELSE 1;
+            imported(i) <- TRUE;
+        }
+        syncTsdBarCodeImp(TFALSE);
+    }
+}
+ EXTEND  FORM formTsdBarCode
+ PROPERTIES loadCatalogBarCodeFrom1c();
+ 
+tsdImpKvartal = DATA LOCAL NUMERIC(INTEGER);
+tsdImpSection = DATA LOCAL NUMERIC(INTEGER);
+tsdImpCellName = DATA LOCAL STRING(INTEGER);
+tsdImpCellUid = DATA LOCAL STRING(INTEGER);
+tsdImpRow = DATA LOCAL NUMERIC(INTEGER);
+//tsdImpWareHouseName1 = DATA LOCAL STRING(INTEGER);
+tsdImpCellCode = DATA LOCAL STRING(INTEGER);
+
+FORM cellsImport1c
+PROPERTIES() tsdImpMetadata EXTID 'odata.metadata'
+OBJECTS value = INTEGER EXTID 'value'
+PROPERTIES(value) 
+        tsdImpCellUid EXTID 'Ref_Key',
+        tsdImpKvartal EXTID 'Квартал', 
+        tsdImpSection EXTID 'Секция', 
+        tsdImpCellName EXTID 'Description', 
+        tsdImpWareHouseName EXTID 'Owner____Presentation', 
+        tsdImpRow EXTID 'Ряд', 
+        tsdImpCellCode EXTID 'Code'
+FILTERS imported(value);
+
+
+loadCatalogCellsQuery(STRING filter){
+
+     headers('Authorization') <- base1cMd5();
+    timeoutHttp() <- 15000; //15 секунд
+    TRY
+        EXTERNAL HTTP GET urlMain1cBase() +
+            '/Catalog_мккмп_МестаВнутриСкладскогоРазмещенияСырьяИГП?$format=json&$expand=Owner&$select=Code,Description,Owner____Presentation,Квартал,Секция,Ряд'
+            + filter
+            HEADERS headers TO resultFile;
+      
+     CATCH resultString() <-  CONCAT ': ','Запрос не был выполнен статус', statusHttp(); 
+}
+
+
+loadCatalogCells 'загрузить из 1c места хранения' () {
+    LOCAL imported1c = BOOLEAN (INTEGER);
+    LOCAL ii = INTEGER ();
+   loadCatalogCellsQuery('');
+   // readResource('testsk2.json');
+   // resultFile() <- resourceFile();
+    IF failedHttp()  THEN
+        {
+            MESSAGE resultString();
+        }
+    ELSE{
+        IMPORT cellsImport1c JSON FROM resultFile();
+        imported1c(INTEGER i) <- NULL WHERE imported1c(i);
+        imported1c(INTEGER i) <- System.imported(i) IF System.imported(i);
+        
+        clearImportTsdWareHouse();
+          FOR [GROUP MAX  INTEGER t BY tsdImpWareHouseName(t)](STRING res)   AND res != '' DO {
+            ii() <- ii() (+) 1;
+            tsdImpCode(ii()) <- res;
+            tsdImpName(ii()) <- res;
+            imported(ii()) <- TRUE;
+        }
+        syncTsdWareHouseImp(TFALSE);
+        SHOW   formTsdWareHouse;
+        
+        clearImportTsdCells();
+        FOR imported1c(INTEGER i) DO {
+            tsdImpCode(i) <-  tsdImpCellCode(i);
+            tsdImpName(i) <- tsdImpCellName(i);
+            imported(i) <- TRUE;
+        }
+        syncTsdCellsImp(TFALSE);
+        
+       
+          
+    }
+}
+
+ EXTEND  FORM formTsdCells
+ PROPERTIES loadCatalogCells();
+ 
+ 

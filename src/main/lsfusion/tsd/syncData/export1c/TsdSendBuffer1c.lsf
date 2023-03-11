@@ -1,0 +1,190 @@
+MODULE TsdSendBuffer1c;
+
+REQUIRE TsdCatalog, ExtUtil, TsdImport1c, TsdInputBuffer;
+
+NAMESPACE Tsd;
+ 
+exp1c_odata_metadata = DATA LOCAL STRING();
+exp1c_user = DATA LOCAL STRING(INTEGER);
+exp1c_user = DATA LOCAL STRING( );
+exp1c_count = DATA LOCAL NUMERIC(INTEGER);
+exp1c_count = DATA LOCAL NUMERIC( );
+exp1c_numRow = DATA LOCAL STRING(INTEGER);
+exp1c_numRow = DATA LOCAL STRING();
+exp1c_issueDate = DATA LOCAL STRING (INTEGER);
+exp1c_issueDate = DATA LOCAL STRING ( );
+exp1c_closedTime = DATA LOCAL STRING (INTEGER);
+exp1c_closedTime = DATA LOCAL STRING ( );
+exp1c_loadTime = DATA LOCAL DATETIME(INTEGER);
+exp1c_loadTime = DATA LOCAL STRING ();
+exp1c_uidDoc = DATA LOCAL STRING(INTEGER);
+exp1c_uidDoc = DATA LOCAL STRING( );
+exp1c_tsdName = DATA LOCAL STRING(INTEGER);
+exp1c_tsdName = DATA LOCAL STRING( );
+exp1c_nameDocType = DATA LOCAL STRING(INTEGER);
+exp1c_nameDocType = DATA LOCAL STRING( );
+exp1c_uidNomenkl = DATA LOCAL STRING(INTEGER);
+exp1c_uidNomenkl = DATA LOCAL STRING( );
+exp1c_nomenklName = DATA LOCAL STRING(INTEGER);
+exp1c_uidUom = DATA LOCAL STRING(INTEGER);
+exp1c_uidUom = DATA LOCAL STRING( );
+exp1c_uomName = DATA LOCAL STRING(INTEGER);
+exp1c_barcode = DATA LOCAL STRING(INTEGER);
+exp1c_barcode = DATA LOCAL STRING( );
+exp1c_comment = DATA LOCAL STRING(INTEGER);
+exp1c_comment = DATA LOCAL STRING( );
+exp1c_tsdNameDocType = DATA LOCAL STRING(INTEGER);
+exp1c_tsdNameDocType = DATA LOCAL STRING( );
+
+FORM reg1Data1cList
+PROPERTIES() exp1c_odata_metadata EXTID 'odata.metadata'
+OBJECTS data = INTEGER EXTID 'value'
+FILTERS imported(data)
+PROPERTIES(data)
+exp1c_uidDoc EXTID 'Документ',
+    exp1c_uidNomenkl EXTID 'Номенклатура_Key',
+    exp1c_nomenklName EXTID 'Номенклатура',
+    exp1c_loadTime EXTID 'ВремяЗагрузки',
+    exp1c_numRow EXTID 'Строка',
+    
+    exp1c_tsdNameDocType EXTID 'ТсдТипДокумента',
+    exp1c_tsdName EXTID 'ТсдИмяТсд',
+    exp1c_closedTime EXTID 'ТсдВремяЗакрытияПартии',
+
+    exp1c_uidUom EXTID 'ЕдиницаИзмерения_Key',
+    exp1c_uomName  EXTID 'ЕдиницаИзмерения',
+    exp1c_count EXTID 'Количество',
+    
+    exp1c_barcode EXTID 'ШтрихКодПродукта',
+    exp1c_issueDate EXTID 'ДатаПроизводства',
+    exp1c_user EXTID 'ОператорТСД',
+    exp1c_nameDocType EXTID 'Документ_Type', 
+    exp1c_comment EXTID 'Комментарий';
+
+ 
+FORM reg1Data1cRec
+PROPERTIES() PANEL  
+        exp1c_uidDoc EXTID 'Документ', //"00000000-0000-0000-0000-000000000000"
+        exp1c_nameDocType EXTID 'Документ_Type', // "StandardODATA.Document_мккмп_ОтражениеВыбытияСырьяПродукцииДляЦелейККУ"
+        exp1c_uidNomenkl EXTID 'Номенклатура_Key', //"04e55d4d-27b5-11e1-b89b-000423b37a56"
+        exp1c_loadTime EXTID 'ВремяЗагрузки',
+        exp1c_numRow EXTID 'Строка', // "1"
+
+        exp1c_tsdNameDocType EXTID 'ТсдТипДокумента', //""
+        exp1c_tsdName EXTID 'ТсдИмяТсд', //""
+        exp1c_closedTime EXTID 'ТсдВремяЗакрытияПартии', // "2023-03-05T00:00:00"
+    
+        exp1c_uidUom EXTID 'ЕдиницаИзмерения_Key', //"2adeb2ff-c45f-11ec-8287-9c7bef554f59"
+        exp1c_count EXTID 'Количество', // 1
+        exp1c_barcode EXTID 'ШтрихКодПродукта',
+        exp1c_issueDate EXTID 'ДатаПроизводства',
+        exp1c_user EXTID 'ОператорТСД',
+        exp1c_comment EXTID 'Комментарий';
+
+
+tsdSendReg1Data1cRecTo1c 'Отправка карточки в 1с' () {
+    headers('Authorization') <-  base1cMd5();
+    headers('Content-Type')  <-  'application/json';
+    TRY EXTERNAL HTTP POST urlMain1cBase() + '/InformationRegister_КхптСервис_ЗаписиТерминалаПриПодбореПродукции/?$format=json' HEADERS headers PARAMS resultFile() TO retOdataDescrpFile;
+        CATCH  {
+        //          IMPORT odata_error JSON FROM retOdataDescrpFile();
+        //          SHOW odata_error;
+        }
+}
+
+
+tsdSendBufferTo1c(){
+    
+     LOCAL  ok = BOOLEAN ();  
+     FOR tsdMainBase() AND NOT timeSend1c(TsdInputBuffer b) AND timeCompleted(b) AND NOT timeSendCheck1c(b) DO {
+         timeSendCheck1c(b) <- TRUE;
+         ok () <- TRUE;
+     }
+     IF ok()  THEN
+         {
+             APPLY NESTED LOCAL;
+             loadCatalogBarCodeFrom1cQuery('');
+             IF failedHttp()  THEN {ok() <- NULL;} ELSE IMPORT barCodeImport1c JSON FROM resultFile();
+
+             loadCatalogCellsQuery('');
+             IF failedHttp()  THEN {ok() <- NULL;} ELSE IMPORT cellsImport1c JSON FROM resultFile();
+          
+             IF ok() THEN {
+                 LOCAL currentTimefor1c = DATETIME ();
+                 LOCAL currentRow = INTEGER();
+                 currentTimefor1c() <- currentDateTime();
+                 currentRow() <- 1;
+                 FOR timeSendCheck1c(TsdInputBuffer b) DO {
+                       exp1c_uidDoc() <- '00000000-0000-0000-0000-000000000000';
+                       exp1c_nameDocType() <- 'StandardODATA.Document_мккмп_ОтражениеВыбытияСырьяПродукцииДляЦелейККУ';
+                       exp1c_uidNomenkl() <- GROUP MAX tsdImpUidNomenkl(INTEGER ii) IF  tsdImpBarCode(ii) AND code(barCode(b)) ==  tsdImpBarCode(ii);
+                       exp1c_loadTime() <- dateTimeTo1cDate( currentTimefor1c() );
+                       exp1c_numRow() <- CONCAT '',currentRow();
+                       exp1c_tsdNameDocType() <- substrAfterDot(staticName(docType(b)));
+                       exp1c_tsdName() <-  tsdHostName(b);
+                       exp1c_closedTime()  <-  dateTimeTo1cDate(timeCompleted(b));
+                       exp1c_uidUom()  <- GROUP MAX tsdImpUidUom(INTEGER ii) IF  tsdImpBarCode(ii) AND code(barCode(b)) ==  tsdImpBarCode(ii);
+                       exp1c_count() <- 1;
+                       exp1c_barcode() <- scanCode(b); 
+                       exp1c_issueDate() <- dateTo1cDate(dateProduct(b));
+                     // exp1c_user() <-  ;
+                     // cellFrom
+                     // cellTo
+                     EXPORT reg1Data1cRec JSON TO resultFile;
+                     tsdSendReg1Data1cRecTo1c();
+                     IF statusHttp() == 200 THEN timeSend1c(b) <- currentTimefor1c();
+                     timeSendCheck1c(b) <- NULL;
+                     currentRow() <-   currentRow() + 1;
+                     APPLY NESTED LOCAL;
+                 }
+             }
+         }
+}
+
+run_test() {
+    
+     LOCAL imported1c = BOOLEAN (INTEGER);
+     LOCAL ii = INTEGER ();
+     headers('Authorization') <-  base1cMd5();
+   
+    //ЗаголовокHTTPР.Вставить("Content-Type", "application/xml");
+     timeoutHttp() <- 15000; //15 секунд
+     TRY
+     EXTERNAL HTTP GET urlMain1cBase() + 
+    '/InformationRegister_КхптСервис_ЗаписиТерминалаПриПодбореПродукции/?$format=json&$top=1'
+     HEADERS headers TO resultFile;
+     CATCH MESSAGE CONCAT ': ','Запрос не был выполнен статус', statusHttp();
+     
+     IMPORT reg1Data1cList JSON FROM resultFile();
+  
+       
+    exp1c_uidDoc(0) <- '00000000-0000-0000-0000-000000000000' ;
+    exp1c_nameDocType(0) <- 'StandardODATA.Document_мккмп_ОтражениеВыбытияСырьяПродукцииДляЦелейККУ';
+    exp1c_uidNomenkl(0) <- '04e55d4d-27b5-11e1-b89b-000423b37a56' ;
+    exp1c_numRow(0) <- '66';
+    
+    exp1c_tsdNameDocType(0) <- '';
+    exp1c_tsdName(0) <- '';
+    exp1c_closedTime(0) <- '2023-03-05T00:00:00';
+    
+    exp1c_loadTime(0) <- currentDateTime();
+    exp1c_uidUom(0) <- '2adeb2ff-c45f-11ec-8287-9c7bef554f59';
+    exp1c_count(0) <- 1;
+    exp1c_barcode(0) <- '';
+    exp1c_issueDate(0) <- '2023-03-05T00:00:00';
+    exp1c_user (0)<- '';
+    exp1c_comment(0) <- 'Комментарий';
+ 
+    SHOW reg1Data1cRec;
+    EXPORT  reg1Data1cRec JSON TO resultFile;
+    fileToString( resultFile());
+  
+    MESSAGE   resultString();
+     
+    headers('Content-Type')  <-  'application/json';
+    EXTERNAL HTTP POST urlMain1cBase() + '/InformationRegister_КхптСервис_ЗаписиТерминалаПриПодбореПродукции/?$format=json' HEADERS headers PARAMS resultFile() ;
+       
+    TRY EXTERNAL HTTP POST urlMain1cBase() + '/InformationRegister_КхптСервис_ЗаписиТерминалаПриПодбореПродукции' HEADERS headers PARAMS resultFile()  ;
+    CATCH FOR System.headersTo(t) DO MESSAGE CONCAT ' ', t ,  System.headersTo(t);
+ 
+}  

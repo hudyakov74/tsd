@@ -1,0 +1,10 @@
+MODULE TsdWareHouse;
+
+REQUIRE TsdCatalog;
+
+NAMESPACE Tsd;
+
+@tsdSimpleClass (TsdWareHouse,'Склады'); 
+
+@tsdSimpleSyncImp (TsdWareHouse);
+@tsdSimpleSyncReq (TsdWareHouse);

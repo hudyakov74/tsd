@@ -1,0 +1,94 @@
+MODULE TsdInputCellSelect;
+
+REQUIRE  TsdCells, Utils; 
+
+NAMESPACE Tsd;
+
+changeInInputCellSelect() ABSTRACT;
+changeInInputCellSelect2() ABSTRACT;
+
+changeOutInputCellSelect() ABSTRACT;
+changeOutInputCellSelect2() ABSTRACT;
+
+FORM formInputCellSelect 'Выбор направления перемещения'
+// OBJECTS cFrom =curruntCellFrom(), cTo = curruntCellTo() 
+PROPERTIES 
+cFrom '' =  name(curruntCellFrom())    ON CHANGE { changeInInputCellSelect(); },
+selectFrom '...' = { changeInInputCellSelect2();},  
+cTo   '' =     name(curruntCellTo())   ON CHANGE {changeOutInputCellSelect();},
+selectTo '...' = { changeOutInputCellSelect2();},
+select 'Продолжить' = { formOk(); }    
+    EVENTS ON INIT {ACTIVATE PROPERTY formInputCellSelect.cFrom;} 
+;
+changeInInputCellSelect2()+ {
+    DIALOG formTsdCellList OBJECTS c = curruntCellFrom() CHANGE DOCKED;
+    ACTIVATE PROPERTY formInputCellSelect.cTo ;
+}
+
+changeInInputCellSelect()+ {
+    INPUT inp1 = STRING DO {
+        LOCAL curr = TsdCells();
+        curr() <- GROUP MAX TsdCells c IF  inp1 = trim(code(c));
+        IF curr() THEN {
+            curruntCellFrom() <- curr();
+            ACTIVATE PROPERTY formInputCellSelect.cTo ;
+        }
+        ELSE {
+            ACTIVATE PROPERTY formInputCellSelect.cFrom;
+        }
+    }
+}
+changeOutInputCellSelect2()+ {
+    DIALOG formTsdCellList  OBJECTS  c = curruntCellTo() CHANGE DOCKED;
+    ACTIVATE PROPERTY formInputCellSelect.select;
+}
+changeOutInputCellSelect()+ {
+    INPUT inp1 = STRING DO {
+        LOCAL curr = TsdCells();
+        curr() <- GROUP MAX TsdCells c IF inp1 = trim(code(c));
+        IF curr() THEN {
+            curruntCellTo() <- curr();
+            ACTIVATE PROPERTY formInputCellSelect.select;
+        }
+        ELSE {
+            ACTIVATE PROPERTY formInputCellSelect.cTo;
+        }
+    }
+}
+
+DESIGN formInputCellSelect { 
+    GROUP (){
+            fill = 1;
+            horizontal = FALSE;
+            lines = 1;
+            NEW g1{
+                MOVE PROPERTY (cFrom){
+                    fill = 0.7; 
+                    height = 100;
+                    width = 70;
+                    fontStyle = 'bold';
+                    fontSize = 24;
+                };
+               MOVE PROPERTY (selectFrom) { width = 100; fill = 0.1;};
+               horizontal = TRUE;
+               fill = 1; 
+               caption = 'Источник';
+           }
+        NEW g2{
+            MOVE PROPERTY (cTo){ 
+                    fill = 0.7; 
+                    height = 100;
+                    width = 70;
+                    fontStyle = 'bold';
+                    fontSize = 24;
+            };
+            MOVE PROPERTY (selectTo) { width = 100; fill = 0.1;};
+               horizontal = TRUE;
+            fill = 1; 
+            caption = 'Приемник';
+           }
+        MOVE PROPERTY (select){height = 100; width = 200;};
+         
+    }
+    TOOLBARBOX {showIf = 0 != 0;}
+}

@@ -1,0 +1,24 @@
+MODULE TsdDoc;
+
+REQUIRE TsdRef;
+
+NAMESPACE Tsd;
+
+CLASS TsdDocType 'Зарегистрированные документы' {}
+
+ 
+name(TsdDocType t) = staticCaption(t);
+  getTsdDocType(STRING inp) = GROUP MAX TsdDocType s AS TsdDocType IF staticName(s) == inp;
+   
+
+FORM tsdListDoc 'Выбор документа';
+
+DESIGN tsdListDoc {
+     GROUP (){
+        caption = currentCaption(TFALSE); 
+        fill = 1; 
+        horizontal = FALSE;
+        lines = 1;
+    }
+    TOOLBARBOX {showIf = 0!=0;}
+}

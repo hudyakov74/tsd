@@ -1,0 +1,6 @@
+MODULE Main;
+
+REQUIRE SystemEvents, TsdConfig;
+
+onWebClientLoad(STRING s)+=  WHEN s = 'restrictFingers.html' THEN 1;
+onLoginLoad(STRING s)+=  WHEN s = 'restrictFingers.html' THEN 1;

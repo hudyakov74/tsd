@@ -1,0 +1,44 @@
+MODULE TsdCells;
+
+REQUIRE TsdCatalog,TsdVars, TsdWareHouse;
+
+NAMESPACE Tsd;
+
+@tsdSimpleClass(TsdCells,'Ячейки');
+
+wareHouse 'Склад' = DATA TsdWareHouse(TsdCells);
+
+
+ EXTEND  FORM formTsdCells
+ PROPERTIES 
+ wareHouse = name(wareHouse(s)) EXTID 'nameWareHouse';
+
+ EXTEND FORM formImportTsdCells
+ PROPERTIES
+ wareHouse = tsdImpWareHouseName(s) EXTID 'nameWareHouse'; 
+
+tsdAddActionSimpleSyncTsdCells(INTEGER i, TsdCells u)+{
+     wareHouse(u) <- (GROUP MAX TsdWareHouse s IF name(s) ==  tsdImpWareHouseName(i));  
+}
+@tsdSimpleSyncImp(TsdCells); 
+@tsdSimpleSyncReq(TsdCells);
+
+curruntCellFrom 'Источник' = DATA LOCAL TsdCells();
+curruntCellTo   'Приемник' = DATA LOCAL TsdCells();
+
+FORM formTsdCellList
+OBJECTS c = TsdCells 
+    PROPERTIES  name 'Наименование' = name(c) READONLY,
+    select 'Выбрать' = { formOk(); }   
+LIST TsdCells OBJECT c;
+
+DESIGN formTsdCellList {
+    PROPERTY (name) {
+         fontSize = 48;
+    }
+    
+     MOVE PROPERTY (select){height = 100; width = 200;};
+     TOOLBARBOX {showIf = 0 != 0;}
+     TOOLBARBOX(c) {showIf = 0 != 0;}
+    
+}

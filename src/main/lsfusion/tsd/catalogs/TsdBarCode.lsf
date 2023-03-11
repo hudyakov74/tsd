@@ -1,0 +1,41 @@
+MODULE TsdBarCode;
+
+REQUIRE TsdCatalog, TsdNomenkl, TsdUom;
+
+NAMESPACE Tsd;
+
+@tsdSimpleClass(TsdBarCode,'Штрих коды');
+
+ nomenkl 'Номенклатура'     = DATA TsdNomenkl(TsdBarCode);
+ uomMain 'Ед. измерения'    = DATA TsdUom(TsdBarCode);
+ uom     'Ед. измерения'    = DATA TsdUom(TsdBarCode);
+ uomKoeff 'коэфф'           = DATA NUMERIC[18,6](TsdBarCode);
+ 
+ EXTEND  FORM formTsdBarCode
+ PROPERTIES
+     nameNomenkl = name(nomenkl(s)) EXTID 'nameNomenkl',
+     nameUomMain = name(uomMain(s)) EXTID 'nameUomMain',
+     nameUom  = name(uom(s)) EXTID 'nameUom', 
+     uomKoeff = uomKoeff(s) EXTID 'uomKoeff'
+ ;
+
+ EXTEND FORM formImportTsdBarCode
+ PROPERTIES
+ nameNomenkl = tsdImpNameNomenkl(s) EXTID 'nameNomenkl',
+ nameUom = tsdImpNameUom(s) EXTID 'nameUom',
+ nameUomMain = tsdImpNameUomMain(s) EXTID 'nameUomMain',
+ uomKoeff = tsdImpUomKoeff(s) EXTID 'uomKoeff'
+ ; 
+ 
+ tsdAddActionSimpleSyncTsdBarCode(INTEGER i,TsdBarCode u)+{
+        nomenkl(u)  <- (GROUP MAX TsdNomenkl s IF name(s) ==  tsdImpNameNomenkl(i));
+        uom(u)      <- (GROUP MAX TsdUom s IF name(s) ==  tsdImpNameUom(i));
+        uomMain(u)  <- (GROUP MAX TsdUom s IF name(s) ==  tsdImpNameUomMain(i));
+        uomKoeff(u) <- tsdImpUomKoeff(i);
+ };
+ @tsdSimpleSyncImp(TsdBarCode);
+
+ @tsdSimpleSyncReq(TsdBarCode);
+  
+ 
+ 

@@ -1,0 +1,52 @@
+MODULE TsdLoginForm;
+ 
+REQUIRE TsdUsers,TsdDoc,TsdCatalog,TsdConfig;
+
+NAMESPACE Tsd;
+
+FORM tsdLoginForm 'Форма входа пользователя'
+  OBJECTS s = STRING[50] PANEL
+  PROPERTIES  inp 'Код входа' = VALUE (s) ON CHANGE {
+        INPUT inp1 = STRING DO {
+            SEEK FIRST tsdLoginForm.s = '';
+             currentUser() <- GROUP MAX TsdUsers u IF code(u) == inp1;
+             IF currentUser() THEN
+                 {
+                     NEWTHREAD syncClientWithMainBase();
+                     SHOW tsdListDoc DOCKED;
+                 }
+        }
+    }
+    EVENTS ON INIT {syncTsdUsersReq(TFALSE);} // синхронизируем пользователей до открытия формы
+; 
+
+DESIGN tsdLoginForm {
+    PANEL {
+            NEW caption {
+                fill = 1;
+                horizontal = FALSE;
+                lines = 1;
+                //caption = ;
+                MOVE PROPERTY (inp){
+                    fill = 1;
+                    fontSize = 26;
+                }
+            }
+    }
+    TOOLBARBOX {showIf = 0 != 0;};
+    TOOLBARSYSTEM (s){
+        showCalculateSum = FALSE ;
+        showCountQuantity= FALSE ;
+        showGroup= FALSE ;
+        showPrintGroupXls = FALSE ;
+        showSettings = FALSE ;
+    }
+}
+
+
+NAVIGATOR {
+    tsd
+      {
+          NEW tsdLoginForm;
+      }
+}

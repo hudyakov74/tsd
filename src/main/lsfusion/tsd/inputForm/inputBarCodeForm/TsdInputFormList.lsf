@@ -1,0 +1,64 @@
+MODULE TsdInputFormList;
+
+REQUIRE TsdInputBuffer;
+
+NAMESPACE Tsd;
+
+toDateTimeLoc = FORMULA STRING[16] 'to_char(($1),\'DD.MM.YYYY HH24:MI\')'; //02.03.2023 15:12
+
+FORM tsdInputBufferFormControlExport 'Данные скана'
+OBJECTS b = TsdInputBuffer EXTID 'data'
+  
+PROPERTIES
+    nameFrom 'Источник' = name(cellFrom(b)) EXTID 'nameFrom',
+    nameTo 'Приемник'   = name(cellTo(b)) EXTID 'nameTo',
+    timeScan = toDateTimeLoc(timeScan(b)) EXTID 'timeScan', 
+    timeScanText = timeScanText(b) EXTID 'timeScanText', 
+    timeCompleted = toDateTimeLoc(timeCompleted(b)) EXTID 'timeCompleted',
+    tsdHostName(b) EXTID 'tsdHostName', 
+    docType = staticName(docType(b)) EXTID 'docType',
+    scanCode(b) EXTID 'scanCode', 
+    barCode = name(barCode(b)) EXTID 'barCode',
+    nom 'Номенклатура' =  name(nomenkl(barCode(b))) EXTID 'nom',
+    uom 'ед.изм'       =  name(uom(barCode(b))) EXTID 'uom',
+    uomKoeff 'кол'     =   (uomKoeff(barCode(b))) EXTID 'uomKoeff',
+    uomMain 'ед.'      =  name(uomMain(barCode(b))) EXTID 'uomMain'
+FILTERS  // timeCompleted(b) AND  -- высылаем все включая текущюю работу!!! 
+         // timeSendCheck(b) AND 
+        NOT timeSend(b);
+
+
+
+ret_timeScan = DATA LOCAL DATETIME (INTEGER);
+ret_timeScanText = DATA LOCAL STRING[20] (INTEGER);
+ret_timeCompleted = DATA LOCAL DATETIME (INTEGER);
+ret_tsdHostName = DATA LOCAL STRING[255] (INTEGER);
+ret_docType = DATA LOCAL STRING (INTEGER);
+ret_scanCode = DATA LOCAL ISTRING[50] (INTEGER);
+ret_barCode = DATA LOCAL ISTRING[250] (INTEGER);
+ret_nom = DATA LOCAL ISTRING[255] (INTEGER);
+ret_uom = DATA LOCAL ISTRING[255] (INTEGER);
+ret_cellFrom = DATA LOCAL ISTRING[255] (INTEGER);
+ret_cellTo = DATA LOCAL ISTRING[255] (INTEGER);
+ret_uomKoeff = DATA LOCAL NUMERIC[18,6] (INTEGER);
+ret_uomMain = DATA LOCAL ISTRING[255] (INTEGER);
+
+FORM tsdInputBufferFormControlImport 'Данные скана'
+OBJECTS b = INTEGER EXTID 'data'
+PROPERTIES
+    ret_timeScan(b) EXTID 'timeScan', 
+    ret_timeScanText(b) EXTID 'timeScanText', 
+    ret_timeCompleted(b) EXTID 'timeCompleted',
+    ret_tsdHostName(b) EXTID 'tsdHostName', 
+    ret_docType(b) EXTID 'docType',
+    ret_scanCode(b) EXTID 'scanCode', 
+    ret_barCode(b) EXTID 'barCode', 
+    ret_nom(b)     EXTID 'nom',
+    ret_uom(b)    EXTID 'uom',
+    ret_cellFrom(b)    EXTID 'cellFrom',
+    ret_cellTo(b)    EXTID 'cellTo',
+    ret_uomKoeff(b)   EXTID 'uomKoeff',
+    ret_uomMain(b)  EXTID 'uomMain'
+    FILTERS imported(b);
+ 
+ 

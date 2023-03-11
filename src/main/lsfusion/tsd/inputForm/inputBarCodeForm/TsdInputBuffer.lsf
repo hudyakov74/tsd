@@ -1,0 +1,24 @@
+MODULE TsdInputBuffer;
+
+REQUIRE TsdDoc,TsdBarCode, Time,TsdCells; 
+
+NAMESPACE Tsd;
+
+CLASS TsdInputBuffer 'Буфер сканирования';
+
+tsdMessage = DATA LOCAL STRING[50];
+tsdHostName 'Идентификатор ТСД' = DATA STRING[255] (TsdInputBuffer);
+docType 'тип' = DATA TsdDocType(TsdInputBuffer);
+timeScan 'Время' = DATA DATETIME (TsdInputBuffer);
+timeScanText 'Время' = DATA STRING[20] (TsdInputBuffer);
+scanCode 'Сканированный номер' = DATA ISTRING[50](TsdInputBuffer);
+barCode 'Штрих код' = DATA TsdBarCode (TsdInputBuffer);
+timeCompleted 'Время завершения пакета' = DATA DATETIME (TsdInputBuffer);
+timeSend 'Время отправки' = DATA DATETIME (TsdInputBuffer);
+timeSendCheck 'К отправке готово' = DATA BOOLEAN (TsdInputBuffer);
+timeSend1c 'Время отправки в 1с' = DATA DATETIME (TsdInputBuffer);
+timeSendCheck1c 'К отправке готово'  = DATA BOOLEAN (TsdInputBuffer);
+dateProduct 'Дата фасовки' = DATA DATE (TsdInputBuffer);
+cellFrom 'Источник' = DATA TsdCells (TsdInputBuffer);
+cellTo   'Приемник' = DATA TsdCells (TsdInputBuffer);
+

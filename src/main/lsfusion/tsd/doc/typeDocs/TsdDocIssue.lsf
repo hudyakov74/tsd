@@ -1,0 +1,31 @@
+MODULE TsdDocIssue;
+
+REQUIRE  TsdDoc,Utils,TsdInputForm;
+
+NAMESPACE Tsd;
+
+EXTEND CLASS TsdDocType {
+    TsdDocIssue1 'Выпуск цеха фасовки'
+}
+ 
+execTsdDocType(TsdDocType docType) {
+    SHOW tsdInputBufferForm OBJECTS docType = docType, showWh = TFALSE DOCKED ;
+}
+
+EXTEND FORM tsdListDoc
+PROPERTIES 
+    buttonTsdDocIssue1 'Выпуск цеха фасовки' = { execTsdDocType( TsdDocType.TsdDocIssue1 ); } 
+;
+
+DESIGN tsdListDoc {
+    GROUP (){
+              
+        MOVE PROPERTY (buttonTsdDocIssue1){ 
+            fill = 1; 
+            height = 100;
+            fontStyle = 'bold';
+            fontSize = 24;
+        }
+    }
+}
+ 

@@ -1,0 +1,9 @@
+MODULE TsdUom;
+
+REQUIRE TsdCatalog;
+
+NAMESPACE Tsd;
+
+@tsdSimpleClass (TsdUom,'Единицы измерения');
+@tsdSimpleSyncImp (TsdUom);
+@tsdSimpleSyncReq (TsdUom);

@@ -1,0 +1,119 @@
+MODULE TsdCatalog;
+
+REQUIRE Utils, TsdVars;
+
+NAMESPACE Tsd;
+
+// сосздадим раздел меню для справочников
+NAVIGATOR {
+    NEW FOLDER tsd 'ТСД' WINDOW toolbar 
+      {
+          NEW FOLDER cataloge 'Справочники'{}
+    }
+}
+
+tsdExportFile = DATA FILE ();
+tsdImpCode = DATA LOCAL ISTRING[50](INTEGER);
+tsdImpName = DATA LOCAL ISTRING[255](INTEGER);
+tsdImpNameNomenkl = DATA LOCAL ISTRING[255](INTEGER);
+tsdImpNameUom = DATA LOCAL ISTRING[255](INTEGER);
+tsdImpNameUomMain = DATA LOCAL ISTRING[255](INTEGER);
+tsdImpUomKoeff = DATA LOCAL NUMERIC[18,6](INTEGER);
+tsdImpWareHouseName = DATA LOCAL ISTRING[255](INTEGER);
+tsdImpActive = DATA LOCAL BOOLEAN(INTEGER);
+
+
+META tsdSimpleClass(object, nameObject)
+    CLASS object nameObject; 
+    // Основные реквизиты
+    code 'Код' =  DATA ISTRING[50](object);
+    name 'Наименование' = DATA ISTRING[255](object) CHARWIDTH 15;
+    active 'Использование' = DATA BOOLEAN (object);  
+    get##object(STRING inp) = GROUP MAX object s AS object IF name(s) == inp;
+    
+    // Основная форма списка
+    FORM form##object nameObject
+        OBJECTS s = object EXTID 'list'
+        PROPERTIES (s) code, name, active
+        PROPERTIES (s) NEW , DELETE
+        LIST object OBJECT s;
+    
+    // Основная форма для импорта данных между базами lsfusion
+    FORM formImport##object nameObject
+        OBJECTS s = INTEGER EXTID 'list'
+        PROPERTIES 
+            code = tsdImpCode(s) EXTID 'code', 
+            name = tsdImpName(s) EXTID 'name',
+            active = tsdImpActive(s) EXTID 'active'
+     FILTERS imported(s);
+    
+    clearImport##object () {
+         tsdImpCode(INTEGER i) <- NULL WHERE tsdImpCode(i);
+         tsdImpName(INTEGER i) <- NULL WHERE tsdImpName(i);
+         tsdImpActive(INTEGER i) <- NULL WHERE tsdImpActive(i);
+         imported(INTEGER i) <- NULL WHERE imported(i);
+    }
+    
+    // функция для вызова чтения справоника из другой(центральной) базы 
+    getList##object(){
+        EXPORT form##object FILTERS active(s) JSON;
+    }
+    NAVIGATOR {
+        cataloge {
+              NEW form##object;
+        }
+    }
+    tsdAddActionSimpleSync###object ABSTRACT (INTEGER, object); 
+ END 
+
+
+META tsdSimpleSyncImp(object)
+    // функция синхронизации справочника
+    sync##object##Imp(TBOOLEAN markExist){
+        LOCAL loc##object = object (INTEGER);
+            FOR System.imported(INTEGER i) DO {
+                loc##object(i) <- (GROUP MAX object s IF name(s) == tsdImpName(i));
+                IF markExist == TTRUE THEN active(loc##object(i)) <- TRUE;
+            }
+            
+            FOR System.imported(INTEGER i) AND NOT loc##object(i) NEW  ns = object DO {
+                loc##object(i) <- ns;
+                active(ns) <- TRUE;
+                name(ns) <- tsdImpName(i);
+            }
+            
+            FOR  loc##object(INTEGER i) AND (NOT code(loc##object(i)) OR code(loc##object(i)) != tsdImpCode(i))  DO {
+                code(loc##object(i)) <- tsdImpCode(i);
+                tsdAddActionSimpleSync###object(i,loc##object(i));
+            }
+    }
+END 
+
+META tsdSimpleSyncReq(object)
+    //функция запроса данных  из центральной базы
+    sync##object##Req(TBOOLEAN withDelete){
+        IF NOT tsdMainBase() AND urlMainBase() THEN {
+            IF withDelete THEN active(object d) <- NULL;
+            headers('Authorization') <- baseMainBaseMd5();
+            timeoutHttp() <- 5000; //5 секунд
+             // EXTERNAL LSF urlMainBase() EXEC 'Tsd.getList'##object  TO tsdExportFile;
+            TRY
+            {
+                EXTERNAL HTTP urlMainBase() + '/exec?action=Tsd.getList'##object HEADERS headers TO tsdExportFile;
+                IMPORT formImport##object JSON FROM tsdExportFile();
+                sync##object##Imp(TTRUE);
+                IF withDelete THEN DELETE object o WHERE o IS object AND NOT active(o);
+                APPLY NESTED LOCAL;
+            }
+            CATCH {
+                fileToString(tsdExportFile());
+                printToLog(CONCAT ': ',statusHttp(),resultString());
+            }
+        }
+    }
+END 
+    
+
+    
+
+

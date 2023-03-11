@@ -1,0 +1,16 @@
+MODULE TsdUsers;
+
+REQUIRE TsdCatalog;
+
+NAMESPACE Tsd;
+
+@tsdSimpleClass (TsdUsers,'Пользователи'); 
+
+
+@tsdSimpleSyncImp (TsdUsers);
+@tsdSimpleSyncReq (TsdUsers);
+
+
+currentUser = DATA LOCAL TsdUsers();
+
+

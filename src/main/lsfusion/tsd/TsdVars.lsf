@@ -1,0 +1,35 @@
+MODULE TsdVars;
+
+REQUIRE Utils;
+
+NAMESPACE Tsd;
+
+
+tsdHostName 'Идентификатор ТСД' = DATA STRING[255] ();
+
+tsdMainBase 'База является основной' = DATA BOOLEAN ();
+urlMainBase 'Адрес главной базы' = DATA STRING ();
+baseMainBaseUser  'Пользователь' = DATA STRING ();
+baseMainBasePassw 'Пароль' = DATA STRING ();
+baseMainBaseMd5 'Пароль md5' = DATA STRING ();
+
+
+urlMain1cBase 'Адрес 1c базы' = DATA STRING ();
+base1cUser  'Пользователь' = DATA STRING ();
+base1cPassw 'Пароль' = DATA STRING ();
+base1cMd5 'Пароль md5' = DATA STRING ();
+
+catalogSounds 'Каталог со звуками в Termux' = DATA STRING ();
+
+
+
+
+WHEN  CHANGED(baseMainBaseUser()) OR CHANGED(baseMainBasePassw() ) DO {
+    encodeBase64(baseMainBaseUser() + ':' + baseMainBasePassw());
+    baseMainBaseMd5() <- 'Basic ' + encodedBase64();
+}
+
+WHEN  CHANGED(base1cUser()) OR CHANGED(base1cPassw() ) DO {
+    encodeBase64(base1cUser() + ':' + base1cPassw());
+    base1cMd5() <- 'Basic ' + encodedBase64();
+}

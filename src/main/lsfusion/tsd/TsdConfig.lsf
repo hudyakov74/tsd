@@ -1,0 +1,65 @@
+MODULE TsdConfig;
+
+REQUIRE TsdVars, SystemEvents, TsdDoc, TsdNomenkl, TsdBarCode, TsdWareHouse, TsdUsers, TsdUom, TsdCells, TsdImport1c, TsdSyncBuffer;
+
+NAMESPACE Tsd;
+getLocalHostName INTERNAL <{ findProperty("tsdHostName").change((Object)java.net.InetAddress.getLocalHost().toString(), context); }>;
+
+
+onStarted() + {
+    IF NOT tsdHostName() THEN {
+         getLocalHostName();
+    }
+}
+
+fillDefault 'Заполнить по умолчанию' () {
+    urlMainBase() <- 'http://127.0.0.1:8080/server'; 
+    catalogSounds() <- '/data/data/com.termux/files/home/sounds'; 
+} 
+
+syncClientWithMainBase 'Синхр. с главное базой.(+Сохранить)' () {
+    syncTsdNomenklReq(TFALSE);
+    syncTsdWareHouseReq(TFALSE);
+    syncTsdUsersReq(TFALSE);
+    syncTsdUomReq(TFALSE);
+   // after all 
+    syncTsdCellsReq(TFALSE);
+    syncTsdBarCodeReq(TFALSE);
+    APPLY;
+}
+
+ 
+FORM tsdConfig 'Настройки'
+PROPERTIES PANEL
+        tsdHostName(),
+        tsdMainBase(), 
+        urlMainBase() SHOWIF NOT tsdMainBase(), 
+        baseMainBaseUser() SHOWIF NOT tsdMainBase(), 
+        baseMainBasePassw() SHOWIF NOT tsdMainBase(), 
+        
+        urlMain1cBase() SHOWIF tsdMainBase(), 
+        base1cPassw() SHOWIF tsdMainBase(),
+        base1cUser() SHOWIF tsdMainBase(), 
+        catalogSounds() SHOWIF NOT tsdMainBase(),
+        fillDefault()
+    PROPERTIES PANEL //  
+        syncClientWithMainBase() SHOWIF   tsdMainBase(),
+        tsdCheckSyncBuffer() SHOWIF NOT tsdMainBase()
+ ;
+
+DESIGN tsdConfig {
+    PROPERTY (baseMainBasePassw()){echoSymbols = TRUE;}
+    PROPERTY (base1cPassw()){echoSymbols = TRUE;}
+    GROUP () {
+        lines = 1;
+        horizontal = FALSE;
+    }
+}
+     
+NAVIGATOR {
+    tsd
+      {
+        NEW tsdListDoc;
+        NEW tsdConfig;
+    }
+}

@@ -1,0 +1,11 @@
+MODULE TsdNomenkl;
+
+REQUIRE TsdCatalog,Utils;
+
+NAMESPACE Tsd;
+
+@tsdSimpleClass (TsdNomenkl,'Номенклатура');
+@tsdSimpleSyncImp (TsdNomenkl);
+@tsdSimpleSyncReq (TsdNomenkl);
+
+     
