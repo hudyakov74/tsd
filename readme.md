@@ -230,13 +230,14 @@ createuser --superuser --pwprompt postgres
 ###   2.5 Установка Tomcat ###
 
 Скачаем tomcat 9 c [сайта]() архивом и положим распакованный в домашней папке.
-переименую каталог из архива 'apache-tomcat-9.0.73' просто в 'tomcat9'
+Переименуем каталог из архива 'apache-tomcat-9.0.73' просто в 'tomcat9'
 пробуем запустить:
+```
 export JAVA_HOME=/data/data/com.termux/files/usr/opt/openjdk
 export CATALINA_HOME=/data/data/com.termux/files/home/tomcat9
 /data/data/com.termux/files/home/tomcat9/bin/catalina.sh start
-
-увидим это:
+```
+увидим это (`http://localhost:8080` если с андроида, или адрес устройства если из компьютера):
 
 ![img_14.png](ReadmeImg/img_14.png)
 
@@ -340,7 +341,7 @@ tar -zxf /sdcard/Download/tsd.tar.gz -C /data/data/com.termux/files --recursive-
 
 
 ## Запуск программы на терминале ##
-Запуск программы заключается в открытии веб странички с адресом `http://localhost:8080?user=tsd&password=tsd`. Сделайте ярлычок на экране и/или используйте какой-нибудь full screen browser.
+Запуск программы заключается в открытии веб странички с адресом `http://localhost:8080?user=tsd&password=tsd` (если порт томката 8080 не меняли на другой).  Сделайте ярлычок на экране и/или используйте какой-нибудь full screen browser.
 
 
 ### ЗАКЛЮЧЕНИЕ ###
