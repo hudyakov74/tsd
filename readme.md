@@ -324,6 +324,15 @@ screen java -jar ~/tsd.jar -Xms1g -Xmx2g  -cp ~/.:tsd.jar -Ddb.server=127.0.0.1 
 
 ###  backup Termux ###
 Используем [архивирование](https://wiki.termux.com/wiki/Backing_up_Termux) Termux для настроек других терминалов.
+backup
+```shell
+tar -zcf /sdcard/Download/tsd.tar.gz -C /data/data/com.termux/files ./home ./usr
+```
+restore
+```shell
+tar -zxf /sdcard/Download/tsd.tar.gz -C /data/data/com.termux/files --recursive-unlink --preserve-permissions
+```
+
 Для установки на другие терминалы достаточно выполнить: 
 1. шаг п.2.2 установки и настройки.
 2. выполнить восстановление из архива (перенести предварительно в андроид, может ssh тоже пригодится конечно)
