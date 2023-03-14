@@ -215,7 +215,6 @@ pkg upgrade
 pkg install pulseaudio 
 pkg install openjdk-17
 pkg install postgresql
-pkg install screen
 ```
 
 ###   2.4 [Настройка postgresql](https://wiki.termux.com/wiki/Postgresql) ###
@@ -321,7 +320,7 @@ pg_ctl -D /data/data/com.termux/files/usr/var/lib/postgresql -l ~/logfile start
 export JAVA_HOME=/data/data/com.termux/files/usr/opt/openjdk
 export CATALINA_HOME=/data/data/com.termux/files/home/tomcat9
 /data/data/com.termux/files/home/tomcat9/bin/catalina.sh start
-screen java -jar ~/tsd.jar -Xms1g -Xmx2g  -cp ~/.:tsd.jar -Ddb.server=127.0.0.1 -Ddb.name=lsfusion  -Ddb.user=postgres  -Ddb.password=123  lsfusion.server.logics.BusinessLogicsBootstrap
+java -jar ~/tsd.jar -Xms1g -Xmx2g  -cp ~/.:tsd.jar -Ddb.server=127.0.0.1 -Ddb.name=lsfusion  -Ddb.user=postgres  -Ddb.password=123  lsfusion.server.logics.BusinessLogicsBootstrap
 ```
 Не забудьте скриптам дать права на запуск.  После перезагрузки должно опять заработать. 
 
