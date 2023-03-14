@@ -323,8 +323,7 @@ export CATALINA_HOME=/data/data/com.termux/files/home/tomcat9
 /data/data/com.termux/files/home/tomcat9/bin/catalina.sh start
 screen java -jar ~/tsd.jar -Xms1g -Xmx2g  -cp ~/.:tsd.jar -Ddb.server=127.0.0.1 -Ddb.name=lsfusion  -Ddb.user=postgres  -Ddb.password=123  lsfusion.server.logics.BusinessLogicsBootstrap
 ```
-после перезагрузки должно опять заработать.
-
+Не забудьте скриптам дать права на запуск.  После перезагрузки должно опять заработать. 
 
 ###   2.8 Установка центрального сервера ###
 Установка центрального сервера обычная, как рекомендуют производители. Можно (и нужно, если не хотите разделить сервер и настройки) использовать тот же jar (артефакт) что сделали выше. После запуска сервера на центральном ставим галочку - центральный и настраиваем пути и пароли к 1с. На терминалах вводим адрес и пароли к центральному серверу.  
