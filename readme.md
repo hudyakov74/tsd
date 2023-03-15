@@ -215,6 +215,8 @@ pkg upgrade
 pkg install pulseaudio 
 pkg install openjdk-17
 pkg install postgresql
+pkg install netcat-openbsd
+pkg install screen
 ```
 
 ###   2.4 [Настройка postgresql](https://wiki.termux.com/wiki/Postgresql) ###
@@ -301,15 +303,6 @@ java -jar ~/tsd.jar -Xms1g -Xmx2g  -cp ~/.:tsd.jar -Ddb.server=127.0.0.1 -Ddb.na
 Остановим в терминале сервер (Ctrl-C) и:
 
 ###   2.7 Окончательно дорабатываем скрипт запуска TERMUX ###
-`mcedit ~/.termux/boot/start-sshd`  
- 
-```shell
-#!/data/data/com.termux/files/usr/bin/sh
-cd ~
-termux-wake-lock
-nohup ~/start-lsf &
-sshd
-```
 
 `mcedit ~/start-lsf`
 
@@ -322,7 +315,33 @@ export CATALINA_HOME=/data/data/com.termux/files/home/tomcat9
 /data/data/com.termux/files/home/tomcat9/bin/catalina.sh start
 java -jar ~/tsd.jar -Xms1g -Xmx2g  -cp ~/.:tsd.jar -Ddb.server=127.0.0.1 -Ddb.name=lsfusion  -Ddb.user=postgres  -Ddb.password=123  lsfusion.server.logics.BusinessLogicsBootstrap
 ```
-Не забудьте скриптам дать права на запуск.  После перезагрузки должно опять заработать. 
+
+####   2.7.1 termux.boot ####
+`mcedit ~/.termux/boot/start-sshd`  
+ 
+```shell
+#!/data/data/com.termux/files/usr/bin/sh
+cd ~
+termux-wake-lock
+nohup ~/start-lsf &
+sshd
+```
+Не забудьте скриптам дать права на запуск.  После перезагрузки должно опять заработать.
+
+####   2.7.2 bashrc ####
+В связи с неустойчивой работой запуска termux.boot проще можно включить в скрипт запуска bash.bashrc в конце: 
+```shell
+
+if nc -z localhost 8080; then
+    echo 'работает'
+else
+    screen ~/start-lsf
+fi
+```
+И вручную запускать termux один раз после загрузки терминала
+
+
+
 
 ###   2.8 Установка центрального сервера ###
 Установка центрального сервера обычная, как рекомендуют производители. Можно (и нужно, если не хотите разделить сервер и настройки) использовать тот же jar (артефакт) что сделали выше. После запуска сервера на центральном ставим галочку - центральный и настраиваем пути и пароли к 1с. На терминалах вводим адрес и пароли к центральному серверу.  
