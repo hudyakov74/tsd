@@ -1,6 +1,6 @@
 MODULE TsdInputForm;
  
-REQUIRE TsdInputBuffer,TsdRef; 
+REQUIRE TsdInputBuffer, TsdRef, ExtUtil; 
 
 NAMESPACE Tsd;
 
@@ -61,16 +61,14 @@ clicBarcodeInput(STRING inp1,TsdDocType dt,TsdCells  cellFrom, TsdCells cellTo) 
         }
     }
 }
-
-
-
+ 
 FORM tsdInputBufferForm 'Скан'
     OBJECTS     showWh = TBOOLEAN  PANEL 
     OBJECTS     docType = TsdDocType PANEL
     OBJECTS     cellFrom = TsdCells  PANEL
     OBJECTS     cellTo   = TsdCells  PANEL
     
-    PROPERTIES  name '' = CONCAT ', ',name(docType), ( IF showWh THEN CONCAT ' => ',name(cellFrom),name(cellTo) ) READONLY
+    PROPERTIES  name '' = CONCAT ', ',name(docType), ( IF showWh THEN CONCAT ' => ',name(cellFrom),name(cellTo) ) READONLY 
     PROPERTIES  showWh '' = VALUE (showWh)
     PROPERTIES formSendData = formSendData(docType)
     OBJECTS s = STRING[50] PANEL
@@ -82,30 +80,39 @@ FORM tsdInputBufferForm 'Скан'
     },
     message '' = tsdMessage() FOREGROUND #FF0000 SHOWIF tsdMessage() 
     
-    OBJECTS b = TsdInputBuffer
-    PROPERTIES (b) READONLY  scanCode 
-    PROPERTIES READONLY 
-        nom 'Номенклатура' =  name(nomenkl(barCode(b))),
-        uom 'ед.изм'       =  name(uom(barCode(b))),
-        uomKoeff 'кол'       =   (uomKoeff(barCode(b))),
-        uomMain 'ед.'       =  name(uomMain(barCode(b))),
-        timeScan 'время скана' = (CONCAT ':', extractHour(timeScan(b)), extractMinute(timeScan(b))),
-        timeScan1 '' = timeScanText(b)
+    OBJECTS b = TsdInputBuffer ON CHANGE {tsdMessage() <- NULL; ACTIVATE PROPERTY tsdInputBufferForm.inp;}
+    PROPERTIES     
+        scanCode = CONCAT '\n', scanCode(b),  reverse(substr(reverse(name(nomenkl(barCode(b)))),25,25)) ,right(name(nomenkl(barCode(b))),25) ON CHANGE {tsdMessage() <- NULL; ACTIVATE PROPERTY tsdInputBufferForm.inp;}
+   //.{3} 
+    PROPERTIES 
+       // nom 'Номенклатура' = ,
+        uomKoeff 'кол. ед.изм. ед.' = TEXT(CONCAT '\n', name(uom(barCode(b))), (uomKoeff(barCode(b))), name(uomMain(barCode(b))))
+            ON CHANGE {tsdMessage() <- NULL; ACTIVATE PROPERTY tsdInputBufferForm.inp;},
+            
+      //  uom 'ед.изм'       =  name(uom(barCode(b))),
+      //  uomMain 'ед.'       =  name(uomMain(barCode(b))),
+        timeScan 'время скана' = (CONCAT ':', extractHour(timeScan(b)), extractMinute(timeScan(b)))
+            ON CHANGE {tsdMessage() <- NULL; ACTIVATE PROPERTY tsdInputBufferForm.inp;},
+        timeScan1 '' = timeScanText(b) 
+            ON CHANGE {tsdMessage() <- NULL; ACTIVATE PROPERTY tsdInputBufferForm.inp;}
  
     
     ORDERS timeScan1 DESC 
     FILTERS docType == docType(b) AND NOT timeCompleted(b)
-    AND  cellTo == cellTo(b) AND  cellFrom == cellFrom(b)
+    AND  cellTo == cellTo(b) AND cellFrom == cellFrom(b)
     
-    EVENTS ON INIT { tsdMessage() <- NULL; ACTIVATE PROPERTY tsdInputBufferForm.inp; }
+    EVENTS ON INIT { 
+          tsdMessage() <- NULL; 
+          ACTIVATE PROPERTY tsdInputBufferForm.inp; 
+    }
 ;
 
 DESIGN tsdInputBufferForm {
-    PROPERTY (scanCode(b)) {charWidth = 15;}
-    PROPERTY (nom) {charWidth = 20;}
-    PROPERTY (uom) {charWidth = 3;}
-    PROPERTY (uomKoeff) {charWidth = 5;}
-    PROPERTY (uomMain) {charWidth = 3;}
+    PROPERTY (scanCode) {charWidth = 20; charHeight = 3;}
+    //PROPERTY (nom) {charWidth = 10;}
+   // PROPERTY (uom) {charWidth = 3;}
+    PROPERTY (uomKoeff) {charWidth = 5; charHeight = 3;}
+   // PROPERTY (uomMain) {charWidth = 3;}
     PROPERTY (timeScan) {charWidth = 4;}
     PROPERTY (timeScan1) {charWidth = 1;}
     PROPERTY (formClose()){height = 50; caption = 'Закрыть'; }
@@ -122,10 +129,12 @@ DESIGN tsdInputBufferForm {
             lines = 1;
             //caption = ;
             MOVE PROPERTY (name){
+                charWidth = 25;
                 fill = 1; 
                 fontSize = 16;
             };
             MOVE PROPERTY (inp){
+                charWidth = 25;
                 fill = 1; 
                 fontSize = 26;
                 fontStyle = 'bold';
@@ -164,7 +173,7 @@ DESIGN tsdInputBufferForm {
 formSendData(TsdDocType docType) + {
     LOCAL d = DATETIME ();
     d() <- currentDateTime();
-    FOR TsdInputBuffer bc AS TsdInputBuffer IF NOT timeCompleted(bc) AND docType(bc) == docType  DO {
+    FOR TsdInputBuffer bc AS TsdInputBuffer IF scanCode(bc) AND  NOT timeCompleted(bc) AND docType(bc) == docType  DO {
         timeCompleted(bc) <- d();
     }
     APPLY NESTED LOCAL;

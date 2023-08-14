@@ -9,6 +9,8 @@ tsdHostName 'Идентификатор ТСД' = DATA STRING[255] ();
 
 tsdMainBase 'База является основной' = DATA BOOLEAN ();
 urlMainBase 'Адрес главной базы' = DATA STRING ();
+tsdMainBaseHourShift 'Разница времени с сервером в часах'  = DATA INTEGER ();
+
 baseMainBaseUser  'Пользователь' = DATA STRING ();
 baseMainBasePassw 'Пароль' = DATA STRING ();
 baseMainBaseMd5 'Пароль md5' = DATA STRING ();

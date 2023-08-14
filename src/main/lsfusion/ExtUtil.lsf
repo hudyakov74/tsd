@@ -5,9 +5,12 @@ REQUIRE Utils,Time;
 NAMESPACE ExtSystem;
  
 substrFromRegExp (TEXT p1, STRING p2) = FORMULA TEXT PG 'substring($1, $2)'; 
+reverse (TEXT p1) = FORMULA TEXT PG 'reverse($1)'; 
 mb_daysInclBetweenDates(DATE dateMax, DATE dateMin) = daysBetweenDates(dateMax, dateMin) +1;
 //DATE_PART('day', end - start)
 substrAfterDot(STRING name) =  substrFrom(name, strpos(name,'.') + 1);
+
+ 
 
 to1cDate0000(DATE d) = toChar(d,'YYYY-MM-DD')+'T00:00:00';
 to1cDate2359(DATE d) = toChar(d,'YYYY-MM-DD')+'T23:59:59';

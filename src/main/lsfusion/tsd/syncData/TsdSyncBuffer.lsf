@@ -1,6 +1,6 @@
 MODULE TsdSyncBuffer;
 
-REQUIRE TsdInputFormList;
+REQUIRE TsdInputFormList, Time;
 
 NAMESPACE Tsd;
 
@@ -10,22 +10,32 @@ NAMESPACE Tsd;
          LOCAL sendValue = XMLFILE ();
          FOR TsdInputBuffer b AS TsdInputBuffer IF timeSendCheck(b) DO timeSendCheck(b) <- NULL;
          FOR TsdInputBuffer b AS TsdInputBuffer IF timeCompleted(b) AND NOT timeSend(b) DO timeSendCheck(b) <- TRUE;
+         localTimeTsd() <- currentDateTime();
          EXPORT tsdInputBufferFormControlExport JSON TO sendValue;
          headers('Authorization') <- baseMainBaseMd5();
          EXTERNAL HTTP urlMainBase() + '/exec?action=Tsd.tsdSyncBuffer' HEADERS headers PARAMS sendValue() TO retValue;
          IF retValue() == '"Ok"' THEN {
             FOR TsdInputBuffer b AS TsdInputBuffer IF  timeCompleted(b) AND timeSendCheck(b) AND NOT timeSend(b) DO  timeSend(b) <- currentDateTime(); 
-            APPLY;
+            APPLY NESTED LOCAL;
          }
          ELSE CANCEL;
      }
  }
  
  tsdSyncBuffer 'Прием данных ТСД' (XMLFILE f){
+     LOCAL hShiftMin = INTEGER();
+     LOCAL dt_loc = DATETIME ();
+     dt_loc() <- currentDateTime();
       TRY {
            IMPORT tsdInputBufferFormControlImport JSON FROM f;
            LOCAL cur =  TsdInputBuffer();
-           FOR imported(INTEGER i) DO {
+           FOR imported(INTEGER i) NOINLINE DO {
+               IF ret_localTimeTsd(i) THEN {
+                   hShiftMin() <- round(subtractSeconds(ret_localTimeTsd(i), dt_loc())/60,0);
+               } 
+               ELSE{
+                   hShiftMin() <- 0;
+               } 
                cur () <-  GROUP MAX TsdInputBuffer b IF  ret_timeScanText(i) == timeScanText(b) AND tsdHostName(b) == ret_tsdHostName(i);
                
                IF NOT cur() THEN NEW n = TsdInputBuffer {
@@ -33,18 +43,18 @@ NAMESPACE Tsd;
                }
                  tsdHostName(cur()) <- ret_tsdHostName(i);
                  docType(cur()) <- getTsdDocType(ret_docType(i));
-                 timeScan(cur()) <- ret_timeScan(i);
+                 timeScan(cur()) <- sumMinutes(ret_timeScan(i), hShiftMin());
                  timeScanText(cur()) <- ret_timeScanText(i);
                  scanCode(cur()) <- ret_scanCode(i);
                  barCode(cur()) <- getTsdBarCode(ret_barCode(i));
                  cellFrom(cur()) <- getTsdCells(ret_cellFrom(i));
                  cellTo(cur()) <- getTsdCells(ret_cellTo(i));
-                 timeCompleted(cur()) <- ret_timeCompleted(i);
+                 timeCompleted(cur()) <- sumMinutes(ret_timeCompleted(i), hShiftMin() );
                  timeSend(cur()) <- currentDateTime();
                  dateProduct(cur()) <- toDateFormat( substr(ret_scanCode(i), 8, 6), 'YYMMDD' ) IF length(ret_scanCode(i)) = 16;
          }
          TRY {
-             APPLY;
+             APPLY NESTED LOCAL;
              EXPORT FROM 'Ok';
          } 
           CATCH  {EXPORT FROM 'Error 2 APPLY';};

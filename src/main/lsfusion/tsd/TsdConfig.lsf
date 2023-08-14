@@ -23,9 +23,10 @@ syncClientWithMainBase 'Синхр. с главное базой.(+Сохран�
     syncTsdUsersReq(TFALSE);
     syncTsdUomReq(TFALSE);
    // after all 
+    syncTsdUsersDocReq();
     syncTsdCellsReq(TFALSE);
     syncTsdBarCodeReq(TFALSE);
-    APPLY;
+    APPLY NESTED LOCAL;
 }
 
  
@@ -43,7 +44,7 @@ PROPERTIES PANEL
         catalogSounds() SHOWIF NOT tsdMainBase(),
         fillDefault()
     PROPERTIES PANEL //  
-        syncClientWithMainBase() SHOWIF   tsdMainBase(),
+        syncClientWithMainBase() SHOWIF NOT tsdMainBase(),
         tsdCheckSyncBuffer() SHOWIF NOT tsdMainBase()
  ;
 

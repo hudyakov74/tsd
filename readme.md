@@ -340,6 +340,44 @@ fi
 ```
 И вручную запускать termux один раз после загрузки терминала
 
+####   2.7.3 Еще один - Стабильный вариант вышел таким ####  
+
+добавлено в содержимое /data/data/com.termux/files/usr/etc/bash.bashrc
+```shell
+
+...
+
+screen ~/start
+```
+
+содержимое ~/start
+```shell
+#!/data/data/com.termux/files/usr/bin/sh
+sshd
+if nc -z localhost 5432; then
+    echo 'server 5432 run'
+else
+ cd ~
+ pg_ctl -D /data/data/com.termux/files/usr/var/lib/postgresql -l ~/logfile start
+fi
+export JAVA_HOME=/data/data/com.termux/files/usr/opt/openjdk
+export CATALINA_HOME=/data/data/com.termux/files/home/tomcat9
+
+
+if nc -z localhost 8088; then
+    echo 'server 8088 run'
+else
+    /data/data/com.termux/files/home/tomcat9/bin/catalina.sh start
+    termux-wake-lock
+    cd  ~
+    java -jar ~/tsd.jar -Xms1g -Xmx2g  -cp ~/.:tsd.jar -Ddb.server=127.0.0.1 -Ddb.name=lsfusion  -Ddb.user=postgres  -Ddb.password=123  lsfusion.server.logics.BusinessLogicsBootstrap
+fi
+```
+
+при каждом запуске bash идет проверка запущенности сервера.
+команды 
+screen -r, screen -d, screen -ls (man screen в помощь) помогут найти и подключится к сеансу где в данный момент работает сервер lsfusion 
+
 
 
 

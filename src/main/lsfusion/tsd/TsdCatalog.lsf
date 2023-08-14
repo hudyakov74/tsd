@@ -15,13 +15,14 @@ NAVIGATOR {
 tsdExportFile = DATA FILE ();
 tsdImpCode = DATA LOCAL ISTRING[50](INTEGER);
 tsdImpName = DATA LOCAL ISTRING[255](INTEGER);
+tsdImpName1 = DATA LOCAL ISTRING[255](INTEGER);
 tsdImpNameNomenkl = DATA LOCAL ISTRING[255](INTEGER);
 tsdImpNameUom = DATA LOCAL ISTRING[255](INTEGER);
 tsdImpNameUomMain = DATA LOCAL ISTRING[255](INTEGER);
 tsdImpUomKoeff = DATA LOCAL NUMERIC[18,6](INTEGER);
 tsdImpWareHouseName = DATA LOCAL ISTRING[255](INTEGER);
 tsdImpActive = DATA LOCAL BOOLEAN(INTEGER);
-
+tsdImpGrant  = DATA LOCAL BOOLEAN(INTEGER);
 
 META tsdSimpleClass(object, nameObject)
     CLASS object nameObject; 
@@ -54,7 +55,7 @@ META tsdSimpleClass(object, nameObject)
          imported(INTEGER i) <- NULL WHERE imported(i);
     }
     
-    // функция для вызова чтения справоника из другой(центральной) базы 
+    // функция для вызова чтения справочника из другой(центральной) базы 
     getList##object(){
         EXPORT form##object FILTERS active(s) JSON;
     }
@@ -72,8 +73,8 @@ META tsdSimpleSyncImp(object)
     sync##object##Imp(TBOOLEAN markExist){
         LOCAL loc##object = object (INTEGER);
             FOR System.imported(INTEGER i) DO {
-                loc##object(i) <- (GROUP MAX object s IF name(s) == tsdImpName(i));
-                IF markExist == TTRUE THEN active(loc##object(i)) <- TRUE;
+                loc##object(i) <- (GROUP MAX object s IF tsdImpName(i) AND tsdImpName(i) != '' AND name(s) == tsdImpName(i));
+                IF markExist == TTRUE AND loc##object(i) THEN active(loc##object(i)) <- TRUE;
             }
             
             FOR System.imported(INTEGER i) AND NOT loc##object(i) NEW  ns = object DO {
@@ -93,7 +94,7 @@ META tsdSimpleSyncReq(object)
     //функция запроса данных  из центральной базы
     sync##object##Req(TBOOLEAN withDelete){
         IF NOT tsdMainBase() AND urlMainBase() THEN {
-            IF withDelete THEN active(object d) <- NULL;
+            IF withDelete == TTRUE THEN active(object d) <- NULL;
             headers('Authorization') <- baseMainBaseMd5();
             timeoutHttp() <- 5000; //5 секунд
              // EXTERNAL LSF urlMainBase() EXEC 'Tsd.getList'##object  TO tsdExportFile;
@@ -102,7 +103,7 @@ META tsdSimpleSyncReq(object)
                 EXTERNAL HTTP urlMainBase() + '/exec?action=Tsd.getList'##object HEADERS headers TO tsdExportFile;
                 IMPORT formImport##object JSON FROM tsdExportFile();
                 sync##object##Imp(TTRUE);
-                IF withDelete THEN DELETE object o WHERE o IS object AND NOT active(o);
+                IF withDelete == TTRUE THEN DELETE object o WHERE o IS object AND NOT active(o);
                 APPLY NESTED LOCAL;
             }
             CATCH {

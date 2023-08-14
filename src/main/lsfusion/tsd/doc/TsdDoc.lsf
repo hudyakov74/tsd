@@ -1,6 +1,6 @@
 MODULE TsdDoc;
 
-REQUIRE TsdRef;
+REQUIRE TsdRef, TsdUsers;
 
 NAMESPACE Tsd;
 
@@ -22,3 +22,71 @@ DESIGN tsdListDoc {
     }
     TOOLBARBOX {showIf = 0!=0;}
 }
+
+userDocGrant 'Показывать пользователю' = DATA BOOLEAN (TsdUsers, TsdDocType);
+
+
+
+    // Основная форма списка
+FORM formTsdUsersDocs 'Права пользователей на типы документов'
+    OBJECTS list = (td = TsdDocType, s = TsdUsers)  
+    PROPERTIES READONLY 
+    name 'Пользователь' = name(s),
+    typeD 'Документ'    = name(td),
+    userDocGrant(s, td) CHANGEABLE 
+;
+
+// Основная форма для импорта данных между базами lsfusion
+FORM formImportTsdUsersDocs  'Формы пользователей'
+OBJECTS list = INTEGER
+PROPERTIES(list) 
+    tsdImpGrant EXTID 'userDocGrant', 
+    tsdImpName  EXTID 'name',
+    tsdImpName1 EXTID 'typeD';
+ 
+ clearImportTsdUsersDocs() {
+         tsdImpGrant(INTEGER i) <- NULL WHERE tsdImpGrant(i);
+         tsdImpName(INTEGER i) <- NULL WHERE tsdImpName(i);
+         tsdImpName1(INTEGER i) <- NULL WHERE tsdImpName1(i);
+         imported(INTEGER i) <- NULL WHERE imported(i);
+ } 
+// функция для вызова чтения справочника из другой(центральной) базы 
+getListTsdUsersDocs(){
+    EXPORT formTsdUsersDocs FILTERS active(s) JSON;
+}
+
+ NAVIGATOR {
+        cataloge {
+              NEW formTsdUsersDocs;
+        }
+ }
+  
+ // функция синхронизации справочника
+syncTsdUsersDocsImp(){
+        FOR System.imported(INTEGER i) DO {
+            userDocGrant(
+                            (GROUP MAX TsdUsers s IF name(s) == tsdImpName(i)),
+                            (GROUP MAX TsdDocType t IF name(t) ==  tsdImpName1(i))
+                        ) <- tsdImpGrant(i);
+        }
+}
+ 
+ //функция запроса данных  из центральной базы
+syncTsdUsersDocReq(){
+    IF NOT tsdMainBase() AND urlMainBase() THEN {
+        headers('Authorization') <- baseMainBaseMd5();
+        timeoutHttp() <- 5000; //5 секунд
+        TRY
+        {
+            EXTERNAL HTTP urlMainBase() + '/exec?action=Tsd.getListTsdUsersDoc' HEADERS headers TO tsdExportFile;
+            IMPORT formImportTsdUsersDocs JSON FROM tsdExportFile();
+            syncTsdUsersDocsImp();
+            APPLY NESTED LOCAL;
+        }
+        CATCH {
+            fileToString(tsdExportFile());
+            printToLog(CONCAT ': ',statusHttp(),resultString());
+        }
+    }
+} 
+ 

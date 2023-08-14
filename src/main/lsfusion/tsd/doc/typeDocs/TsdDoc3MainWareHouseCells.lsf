@@ -15,7 +15,7 @@ execTsdDocType3(TsdDocType docType) {
 
 EXTEND FORM tsdListDoc
 PROPERTIES 
-    buttonTsdDocIssue3 'Перемещ. внутри СГП' = { execTsdDocType3( TsdDocType.TsdDocIssue3 ); } 
+    buttonTsdDocIssue3 'Перемещ. внутри СГП' = { execTsdDocType3( TsdDocType.TsdDocIssue3 ); } SHOWIF userDocGrant(currentUser(),TsdDocType.TsdDocIssue3 )
 ;
 
 DESIGN tsdListDoc {

@@ -14,7 +14,7 @@ execTsdDocType2(TsdDocType docType) {
 
 EXTEND FORM tsdListDoc
 PROPERTIES 
-    buttonTsdDocIssue2 'Цех фасовки в Склад' = { execTsdDocType2( TsdDocType.TsdDocIssue2 ); } 
+    buttonTsdDocIssue2 'Цех фасовки в Склад' = { execTsdDocType2( TsdDocType.TsdDocIssue2 ); } SHOWIF userDocGrant(currentUser(),TsdDocType.TsdDocIssue2)
 ;
 
 DESIGN tsdListDoc {

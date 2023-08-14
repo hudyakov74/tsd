@@ -27,7 +27,7 @@ NAMESPACE Tsd;
  uomKoeff = tsdImpUomKoeff(s) EXTID 'uomKoeff'
  ; 
  
- tsdAddActionSimpleSyncTsdBarCode(INTEGER i,TsdBarCode u)+{
+ tsdAddActionSimpleSyncTsdBarCode(INTEGER i,TsdBarCode u) + {
         nomenkl(u)  <- (GROUP MAX TsdNomenkl s IF name(s) ==  tsdImpNameNomenkl(i));
         uom(u)      <- (GROUP MAX TsdUom s IF name(s) ==  tsdImpNameUom(i));
         uomMain(u)  <- (GROUP MAX TsdUom s IF name(s) ==  tsdImpNameUomMain(i));

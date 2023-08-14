@@ -5,11 +5,14 @@ REQUIRE TsdInputBuffer;
 NAMESPACE Tsd;
 
 toDateTimeLoc = FORMULA STRING[16] 'to_char(($1),\'DD.MM.YYYY HH24:MI\')'; //02.03.2023 15:12
+localTimeTsd  'лок. время' = DATA LOCAL DATETIME ();
+localTimeTsdString(TsdInputBuffer b) = toDateTimeLoc(localTimeTsd());
 
 FORM tsdInputBufferFormControlExport 'Данные скана'
 OBJECTS b = TsdInputBuffer EXTID 'data'
   
 PROPERTIES
+    localTimeTsd = localTimeTsdString(b) EXTID 'localTimeTsd',
     nameFrom 'Источник' = name(cellFrom(b)) EXTID 'nameFrom',
     nameTo 'Приемник'   = name(cellTo(b)) EXTID 'nameTo',
     timeScan = toDateTimeLoc(timeScan(b)) EXTID 'timeScan', 
@@ -28,7 +31,7 @@ FILTERS  // timeCompleted(b) AND  -- высылаем все включая те
         NOT timeSend(b);
 
 
-
+ret_localTimeTsd = DATA LOCAL DATETIME (INTEGER);
 ret_timeScan = DATA LOCAL DATETIME (INTEGER);
 ret_timeScanText = DATA LOCAL STRING[20] (INTEGER);
 ret_timeCompleted = DATA LOCAL DATETIME (INTEGER);
@@ -46,6 +49,7 @@ ret_uomMain = DATA LOCAL ISTRING[255] (INTEGER);
 FORM tsdInputBufferFormControlImport 'Данные скана'
 OBJECTS b = INTEGER EXTID 'data'
 PROPERTIES
+    ret_localTimeTsd(b) EXTID 'localTimeTsd',
     ret_timeScan(b) EXTID 'timeScan', 
     ret_timeScanText(b) EXTID 'timeScanText', 
     ret_timeCompleted(b) EXTID 'timeCompleted',
