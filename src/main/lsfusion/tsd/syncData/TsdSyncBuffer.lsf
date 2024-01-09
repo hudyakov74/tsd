@@ -1,6 +1,6 @@
 MODULE TsdSyncBuffer;
 
-REQUIRE TsdInputFormList, Time;
+REQUIRE TsdInputFormList, Time, Utils;
 
 NAMESPACE Tsd;
 
@@ -37,21 +37,24 @@ NAMESPACE Tsd;
                    hShiftMin() <- 0;
                } 
                cur () <-  GROUP MAX TsdInputBuffer b IF  ret_timeScanText(i) == timeScanText(b) AND tsdHostName(b) == ret_tsdHostName(i);
-               
-               IF NOT cur() THEN NEW n = TsdInputBuffer {
+               IF  length(ret_scanCode(i)) > 0 THEN {
+               APPLY {
+                   IF NOT cur() THEN NEW n = TsdInputBuffer {
                    cur() <- n;
                }
-                 tsdHostName(cur()) <- ret_tsdHostName(i);
-                 docType(cur()) <- getTsdDocType(ret_docType(i));
-                 timeScan(cur()) <- sumMinutes(ret_timeScan(i), hShiftMin());
-                 timeScanText(cur()) <- ret_timeScanText(i);
-                 scanCode(cur()) <- ret_scanCode(i);
-                 barCode(cur()) <- getTsdBarCode(ret_barCode(i));
-                 cellFrom(cur()) <- getTsdCells(ret_cellFrom(i));
-                 cellTo(cur()) <- getTsdCells(ret_cellTo(i));
-                 timeCompleted(cur()) <- sumMinutes(ret_timeCompleted(i), hShiftMin() );
-                 timeSend(cur()) <- currentDateTime();
-                 dateProduct(cur()) <- toDateFormat( substr(ret_scanCode(i), 8, 6), 'YYMMDD' ) IF length(ret_scanCode(i)) = 16;
+                    tsdHostName(cur()) <- ret_tsdHostName(i);
+                    docType(cur()) <- getTsdDocType(ret_docType(i));
+                    timeScan(cur()) <- sumMinutes(ret_timeScan(i), hShiftMin());
+                    timeScanText(cur()) <- ret_timeScanText(i);
+                    scanCode(cur()) <- ret_scanCode(i);
+                    barCode(cur()) <- getTsdBarCode(ret_barCode(i));
+                    cellFrom(cur()) <- getTsdCells(ret_cellFrom(i));
+                    cellTo(cur()) <- getTsdCells(ret_cellTo(i));
+                    timeCompleted(cur()) <- sumMinutes(ret_timeCompleted(i), hShiftMin() );
+                    timeSend(cur()) <- currentDateTime();
+                    dateProduct(cur()) <- toDateFormat( substr(ret_scanCode(i), 8, 6), 'YYMMDD' ) IF length(ret_scanCode(i)) = 16;
+               }
+                   }
          }
          TRY {
              APPLY NESTED LOCAL;

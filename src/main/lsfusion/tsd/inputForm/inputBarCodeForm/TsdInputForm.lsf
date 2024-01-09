@@ -26,7 +26,9 @@ NAVIGATOR {
 formSendData 'Завершить партию' (TsdDocType docType) ABSTRACT;
 
 clicBarcodeInput(STRING inp1,TsdDocType dt,TsdCells  cellFrom, TsdCells cellTo) {
-    IF NOT (GROUP MAX TsdInputBuffer c AS TsdInputBuffer IF length(inp1) == 16 AND inp1 == scanCode(c) AND docType(c) == dt) THEN {
+    printToLog(toChar(currentDateTime(),'DD.MM.YYYY'));
+    printToLog(inp1);
+    IF NOT (GROUP MAX TsdInputBuffer c AS TsdInputBuffer IF length(inp1) == 16 AND inp1 == scanCode(c) AND docType(c) == dt) AND length(inp1) > 3 THEN {
                 tsdMessage() <- NULL;
                 LOCAL bc = TsdBarCode();
                 LOCAL dateProd = DATE();
@@ -37,8 +39,11 @@ clicBarcodeInput(STRING inp1,TsdDocType dt,TsdCells  cellFrom, TsdCells cellTo) 
                     fInp1() <- substr(inp1,1,7);
                 }  
                 ELSE fInp1() <- inp1;
+                printToLog(fInp1());
                 bc() <- GROUP MAX TsdBarCode bc AS TsdBarCode IF code(bc) == fInp1();
-                IF bc() THEN NEW n = TsdInputBuffer {
+                printToLog(name(bc()));
+                //IF bc() THEN 
+                 NEW n = TsdInputBuffer {
                     tsdHostName(n) <- tsdHostName();
                     docType(n) <- dt;
                     timeScan(n) <- currentDateTime();
@@ -50,15 +55,15 @@ clicBarcodeInput(STRING inp1,TsdDocType dt,TsdCells  cellFrom, TsdCells cellTo) 
                     cellTo(n) <- cellTo;
                      
                     APPLY NESTED LOCAL;
-                    }
+                 }
         }
     
     ELSE {   
          tsdMessage() <- CONCAT ' ', 'Повтор!.Штрих код уже учтен',inp1;
-         NEWTHREAD {
+      //     NEWTHREAD {
       // pkg install pulseaudio
-        cmd('paplay /data/data/com.termux/files/home/error.ogg');
-        }
+      //  cmd('paplay /data/data/com.termux/files/home/error.ogg');
+      // }
     }
 }
  
@@ -99,7 +104,7 @@ FORM tsdInputBufferForm 'Скан'
     
     ORDERS timeScan1 DESC 
     FILTERS docType == docType(b) AND NOT timeCompleted(b)
-    AND  cellTo == cellTo(b) AND cellFrom == cellFrom(b)
+//     AND  cellTo == cellTo(b) AND cellFrom == cellFrom(b)
     
     EVENTS ON INIT { 
           tsdMessage() <- NULL; 
@@ -108,6 +113,9 @@ FORM tsdInputBufferForm 'Скан'
 ;
 
 DESIGN tsdInputBufferForm {
+      GRID(b) {
+        quickSearch = TRUE;
+    }
     PROPERTY (scanCode) {charWidth = 20; charHeight = 3;}
     //PROPERTY (nom) {charWidth = 10;}
    // PROPERTY (uom) {charWidth = 3;}

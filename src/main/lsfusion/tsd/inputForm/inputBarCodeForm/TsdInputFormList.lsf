@@ -28,7 +28,7 @@ PROPERTIES
     uomMain 'ед.'      =  name(uomMain(barCode(b))) EXTID 'uomMain'
 FILTERS  // timeCompleted(b) AND  -- высылаем все включая текущюю работу!!! 
          // timeSendCheck(b) AND 
-        NOT timeSend(b);
+     timeScan(b) AND  NOT timeSend(b);
 
 
 ret_localTimeTsd = DATA LOCAL DATETIME (INTEGER);
